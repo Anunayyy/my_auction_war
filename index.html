@@ -34,19 +34,25 @@
         </div>
 
         <script>
-            // Magic Walkie-Talkie Connection
-            // var ws = new WebSocket("ws://localhost:8000/ws");
-            var ws = new WebSocket("https://my-auction-war.onrender.com");
+            // --- THE FIX IS HERE ---
+            // 1. Use wss:// instead of https://
+            // 2. Add /ws at the end
+            var ws = new WebSocket("wss://my-auction-war.onrender.com/ws");
+
+            ws.onopen = function() {
+                addMessage("✅ Connected to Auction Server!");
+            };
+
+            ws.onerror = function(err) {
+                addMessage("❌ Connection Error! Check your URL.");
+            };
 
             ws.onmessage = function(event) {
                 const data = event.data;
 
-                // 1. Handle Timer Updates
                 if (data.includes("Time:")) {
                     const timerDiv = document.getElementById('timer');
                     timerDiv.innerText = data;
-                    
-                    // Add pulse effect when time is running low
                     const seconds = parseInt(data.match(/\d+/));
                     if (seconds <= 5) {
                         timerDiv.classList.add('timer-pulse', 'text-red-500');
@@ -54,13 +60,9 @@
                         timerDiv.classList.remove('timer-pulse', 'text-red-500');
                     }
                 } 
-                
-                // 2. Handle Price Updates
                 else if (data.includes("Price:")) {
                     document.getElementById('price').innerText = data.replace("Price: ", "");
                 } 
-                
-                // 3. Handle End of Game
                 else if (data.includes("SOLD!")) {
                     document.getElementById('timer').innerText = "SOLD!";
                     document.getElementById('timer').classList.remove('timer-pulse');
@@ -69,8 +71,6 @@
                     document.getElementById('bidButton').classList.add('opacity-50', 'cursor-not-allowed');
                     addMessage("🔨 AUCTION CLOSED");
                 }
-                
-                // 4. Handle general messages
                 else {
                     addMessage(data);
                 }
@@ -80,13 +80,16 @@
                 var messages = document.getElementById('messages');
                 var message = document.createElement('li');
                 message.textContent = "> " + text;
-                messages.prepend(message); // Put newest at top
+                messages.prepend(message);
             }
 
             function sendBid() {
-                ws.send("BID");
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send("BID");
+                } else {
+                    addMessage("⚠️ Not connected yet...");
+                }
             }
         </script>
     </body>
-
 </html>

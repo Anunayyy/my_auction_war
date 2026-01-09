@@ -35,7 +35,8 @@
 
         <script>
             // Magic Walkie-Talkie Connection
-            var ws = new WebSocket("ws://localhost:8000/ws");
+            // var ws = new WebSocket("ws://localhost:8000/ws");
+            var ws = new WebSocket("https://my-auction-war.onrender.com");
 
             ws.onmessage = function(event) {
                 const data = event.data;
@@ -87,4 +88,5 @@
             }
         </script>
     </body>
+
 </html>

@@ -34,25 +34,30 @@
         </div>
 
         <script>
-            // --- THE FIX IS HERE ---
-            // 1. Use wss:// instead of https://
-            // 2. Add /ws at the end
-            var ws = new WebSocket("wss://my-auction-war.onrender.com/ws");
+            // --- DYNAMIC WEBSOCKET LOGIC ---
+            // This detects if we are on local (ws) or production (wss)
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            const wsUrl = `${protocol}//${host}/ws`;
+            
+            var ws = new WebSocket(wsUrl);
 
             ws.onopen = function() {
                 addMessage("✅ Connected to Auction Server!");
             };
 
-            ws.onerror = function(err) {
-                addMessage("❌ Connection Error! Check your URL.");
+            ws.onclose = function() {
+                addMessage("❌ Disconnected from Server.");
             };
 
             ws.onmessage = function(event) {
                 const data = event.data;
 
+                // 1. Handle Timer Updates
                 if (data.includes("Time:")) {
                     const timerDiv = document.getElementById('timer');
                     timerDiv.innerText = data;
+                    
                     const seconds = parseInt(data.match(/\d+/));
                     if (seconds <= 5) {
                         timerDiv.classList.add('timer-pulse', 'text-red-500');
@@ -60,9 +65,13 @@
                         timerDiv.classList.remove('timer-pulse', 'text-red-500');
                     }
                 } 
+                
+                // 2. Handle Price Updates
                 else if (data.includes("Price:")) {
                     document.getElementById('price').innerText = data.replace("Price: ", "");
                 } 
+                
+                // 3. Handle Game End
                 else if (data.includes("SOLD!")) {
                     document.getElementById('timer').innerText = "SOLD!";
                     document.getElementById('timer').classList.remove('timer-pulse');
@@ -71,6 +80,8 @@
                     document.getElementById('bidButton').classList.add('opacity-50', 'cursor-not-allowed');
                     addMessage("🔨 AUCTION CLOSED");
                 }
+                
+                // 4. Activity Logs
                 else {
                     addMessage(data);
                 }
@@ -86,8 +97,6 @@
             function sendBid() {
                 if (ws.readyState === WebSocket.OPEN) {
                     ws.send("BID");
-                } else {
-                    addMessage("⚠️ Not connected yet...");
                 }
             }
         </script>
